@@ -35,6 +35,8 @@
 #define debug_rfmln(a)
 #endif
 
+#define RFM95_SPI_SETTING SPISettings(80000000, MSBFIRST, SPI_MODE0)
+
 class plainRFM95
 {
 public:

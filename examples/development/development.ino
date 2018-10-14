@@ -126,7 +126,7 @@ void sender()
       digitalWrite(LED_BUILTIN, HIGH);
       rfm.preparePayload(sbuf, len);
       rfm.transmit();
-      switch (rfm.block())
+      switch (rfm.block(1000))
       {
         case plainRFM95::TX_DONE:
           digitalWrite(LED_BUILTIN, LOW);

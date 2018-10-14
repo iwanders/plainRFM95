@@ -25,9 +25,9 @@ plainRFM95::plainRFM95(uint8_t cs_pin) : cs_pin_(cs_pin)
 
 void plainRFM95::reset(uint8_t pin)
 {  // function to send the RFM95 a hardware reset.
-  // p 75 of datasheet;
+  // p 109 of datasheet
   pinMode(pin, OUTPUT);
-  digitalWrite(pin, HIGH);
+  digitalWrite(pin, LOW);
   delayMicroseconds(150);  // pull high for >100 uSec
   pinMode(pin, INPUT);     // release
   delay(10);               //  wait 10 milliseconds before SPI is possible.
@@ -45,7 +45,7 @@ uint8_t plainRFM95::readRawRegister(uint8_t reg)
 
 void plainRFM95::writeRegister(uint8_t reg, uint8_t data)
 {
-  SPI.beginTransaction(SPISettings(10000000, MSBFIRST, SPI_MODE0));  // gain control of SPI bus
+  SPI.beginTransaction(RFM95_SPI_SETTING);  // gain control of SPI bus
   chipSelect(true);                                                  // assert chip select
   SPI.transfer(RFM95_WRITE_REG_MASK | (reg & RFM95_READ_REG_MASK));
   SPI.transfer(data);
@@ -56,7 +56,7 @@ void plainRFM95::writeRegister(uint8_t reg, uint8_t data)
 uint8_t plainRFM95::readRegister(uint8_t reg)
 {
   uint8_t foo;
-  SPI.beginTransaction(SPISettings(10000000, MSBFIRST, SPI_MODE0));  // gain control of SPI bus
+  SPI.beginTransaction(RFM95_SPI_SETTING);  // gain control of SPI bus
   chipSelect(true);                                                  // assert chip select
   SPI.transfer((reg & RFM95_READ_REG_MASK));
   foo = SPI.transfer(0);
@@ -67,7 +67,7 @@ uint8_t plainRFM95::readRegister(uint8_t reg)
 
 void plainRFM95::writeMultiple(uint8_t reg, void* data, uint8_t len)
 {
-  SPI.beginTransaction(SPISettings(10000000, MSBFIRST, SPI_MODE0));  // gain control of SPI bus
+  SPI.beginTransaction(RFM95_SPI_SETTING);  // gain control of SPI bus
   chipSelect(true);                                                  // assert chip select
   SPI.transfer(RFM95_WRITE_REG_MASK | (reg & RFM95_READ_REG_MASK));
   uint8_t* r = reinterpret_cast<uint8_t*>(data);
@@ -81,7 +81,7 @@ void plainRFM95::writeMultiple(uint8_t reg, void* data, uint8_t len)
 
 void plainRFM95::readMultiple(uint8_t reg, void* data, uint8_t len)
 {
-  SPI.beginTransaction(SPISettings(10000000, MSBFIRST, SPI_MODE0));  // gain control of SPI bus
+  SPI.beginTransaction(RFM95_SPI_SETTING);  // gain control of SPI bus
   chipSelect(true);                                                  // assert chip select
 
   SPI.transfer((reg & RFM95_READ_REG_MASK));
@@ -116,7 +116,7 @@ uint16_t plainRFM95::readRegister16(uint8_t reg)
 void plainRFM95::writeFIFO(const void* buffer, uint8_t len)
 {
   const uint8_t* r = reinterpret_cast<const uint8_t*>(buffer);
-  SPI.beginTransaction(SPISettings(10000000, MSBFIRST, SPI_MODE0));  // gain control of SPI bus
+  SPI.beginTransaction(RFM95_SPI_SETTING);  // gain control of SPI bus
   chipSelect(true);                                                  // assert chip select
   SPI.transfer(RFM95_WRITE_REG_MASK | (RFM95_FIFO & RFM95_READ_REG_MASK));
   for (uint8_t i = 0; i < len; i++)
@@ -131,7 +131,7 @@ void plainRFM95::writeFIFO(const void* buffer, uint8_t len)
 void plainRFM95::readFIFO(void* buffer, uint8_t len)
 {
   uint8_t* r = reinterpret_cast<uint8_t*>(buffer);
-  SPI.beginTransaction(SPISettings(10000000, MSBFIRST, SPI_MODE0));  // gain control of SPI bus
+  SPI.beginTransaction(RFM95_SPI_SETTING);  // gain control of SPI bus
   chipSelect(true);                                                  // assert chip select
 
   SPI.transfer((RFM95_FIFO % RFM95_READ_REG_MASK));
@@ -219,6 +219,8 @@ bool plainRFM95::begin()
   success &= (readRegister(RFM95_LORA_FIFO_RX_BASE_ADDR) == Rx_FIFO_addr);
   writeRegister(RFM95_LORA_PAYLOAD_MAX_LENGTH, payload_max_length);
 
+  writeRegister(RFM95_LORA_IRQ_MASK, 0);
+
   // set moderate power.
   setFrequency((uint32_t) 434*1000*1000); // set the frequency.
   setPower(10);
@@ -269,7 +271,7 @@ void plainRFM95::transmit()
   writeRegister(RFM95_DIO_MAPPING1, RFM95_LORA_DIO0_TX_DONE << RFM95_DIO_MAPPING_DIO0_SHIFT);
 
   // Setup interrupt for Tx Done, mask all others.
-  writeRegister(RFM95_LORA_IRQ_MASK, ~(RFM95_LORA_IRQ_TX_DONE));
+  //  writeRegister(RFM95_LORA_IRQ_MASK, ~(RFM95_LORA_IRQ_TX_DONE));
   clearIRQ();
 
   setMode(RFM95_MODE_TX);
@@ -288,7 +290,7 @@ void plainRFM95::receive()
   writeRegister(RFM95_DIO_MAPPING1, RFM95_LORA_DIO0_RX_DONE << RFM95_DIO_MAPPING_DIO0_SHIFT);
 
   // Set interrupts for Rx events only.
-  writeRegister(RFM95_LORA_IRQ_MASK, ~(RFM95_LORA_IRQ_RX_TIMEOUT | RFM95_LORA_IRQ_RX_DONE | RFM95_LORA_IRQ_CRC_ERROR));
+  //  writeRegister(RFM95_LORA_IRQ_MASK, ~(RFM95_LORA_IRQ_RX_TIMEOUT | RFM95_LORA_IRQ_RX_DONE | RFM95_LORA_IRQ_CRC_ERROR));
   clearIRQ();
   // Switch modes.
   setMode(RFM95_MODE_RX_CONTINUOUS);
@@ -299,7 +301,7 @@ void plainRFM95::standby()
   activity_ = IDLE;
   setMode(RFM95_MODE_STANDBY);
   writeRegister(RFM95_DIO_MAPPING1, RFM95_LORA_DIO0_NONE << RFM95_DIO_MAPPING_DIO0_SHIFT);
-  writeRegister(RFM95_LORA_IRQ_MASK, 0);
+  //  writeRegister(RFM95_LORA_IRQ_MASK, 0);
   clearIRQ();  
 }
 
@@ -337,6 +339,7 @@ plainRFM95::IRQState plainRFM95::poll()
 {
   // Multiple could be active if irq's weren't cleared properly...
   const uint8_t irqs = readRegister(RFM95_LORA_IRQ_FLAGS);
+  Serial.print(" p: 0x"); Serial.print(irqs, HEX);
 
   if ((irqs & RFM95_LORA_IRQ_TX_DONE) && (activity_ == TX))
   {
