@@ -52,10 +52,18 @@ public:
 
     TIMEOUT,            //!< Timeout has happened, can only happen if blocking with optional argument of Rx single.
   };
+  enum Activity : uint8_t 
+  {
+    IDLE,
+    RX,
+    TX,
+    CAD
+  };
 protected:
   uint8_t cs_pin_;  //!< chip select pin.
   uint8_t fifo_tx_;  //!< Fifo Tx base address.
   uint8_t fifo_rx_;  //!< Fifo Rx base address.
+  Activity activity_ = IDLE;
 
   void writeRegister(uint8_t reg, uint8_t data);
   void writeMultiple(uint8_t reg, void* data, uint8_t len);

@@ -264,6 +264,7 @@ void plainRFM95::preparePayload(const void* buffer, uint8_t length)
 
 void plainRFM95::transmit()
 {
+  activity_ = TX;
   seekFIFO(fifo_tx_);
   writeRegister(RFM95_DIO_MAPPING1, RFM95_LORA_DIO0_TX_DONE << RFM95_DIO_MAPPING_DIO0_SHIFT);
 
@@ -278,6 +279,7 @@ void plainRFM95::receive()
 {
   standby();
 
+  activity_ = RX;
   // rewind the fifo pointer to the rx position. It will still move if we are in receive mode for a while...
   // That's why we use the RX_CURRENT_ADDR to retrieve the packet.
   seekFIFO(fifo_rx_);
@@ -294,6 +296,7 @@ void plainRFM95::receive()
 
 void plainRFM95::standby()
 {
+  activity_ = IDLE;
   setMode(RFM95_MODE_STANDBY);
   writeRegister(RFM95_DIO_MAPPING1, RFM95_LORA_DIO0_NONE << RFM95_DIO_MAPPING_DIO0_SHIFT);
   writeRegister(RFM95_LORA_IRQ_MASK, 0);
@@ -335,12 +338,12 @@ plainRFM95::IRQState plainRFM95::poll()
   // Multiple could be active if irq's weren't cleared properly...
   const uint8_t irqs = readRegister(RFM95_LORA_IRQ_FLAGS);
 
-  if (irqs & RFM95_LORA_IRQ_TX_DONE)
+  if ((irqs & RFM95_LORA_IRQ_TX_DONE) && (activity_ == TX))
   {
     return TX_DONE;
   }
 
-  if (irqs & RFM95_LORA_IRQ_RX_DONE)
+  if ((irqs & RFM95_LORA_IRQ_RX_DONE) && (activity_ == RX))
   {
     if (irqs & RFM95_LORA_IRQ_CRC_ERROR)
     {
@@ -352,7 +355,7 @@ plainRFM95::IRQState plainRFM95::poll()
     }
   }
 
-  if (irqs & RFM95_LORA_IRQ_CAD_DONE)
+  if ((irqs & RFM95_LORA_IRQ_CAD_DONE) && (activity_ == CAD))
   {
     if (irqs & RFM95_LORA_IRQ_CAD_DETECTED)
     {

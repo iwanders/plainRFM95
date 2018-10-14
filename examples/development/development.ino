@@ -95,7 +95,7 @@ void sender()
           // done, got packet.
           break;  // show packet stats
         case plainRFM95::RX_DONE_INVALID_PACKET:
-          Serial.print("Received invalid packet :(");
+          Serial.println("Received invalid packet :(");
           waiting_for_response = false;
           break;  // show packet stats
         case plainRFM95::TIMEOUT:
@@ -104,6 +104,7 @@ void sender()
           continue;
         default:
           Serial.print("wait irq: 0x"); Serial.println(rfm.readRawRegister(RFM95_LORA_IRQ_FLAGS), HEX);
+          Serial.print("RFM95_LORA_HOP_CHANNEL: 0x"); Serial.println(rfm.readRawRegister(RFM95_LORA_HOP_CHANNEL), HEX);
           waiting_for_response = false;
           continue;
       }
@@ -133,6 +134,7 @@ void sender()
           break;
         default:
           Serial.print("sent irq: 0x"); Serial.println(rfm.readRawRegister(RFM95_LORA_IRQ_FLAGS), HEX);
+          Serial.print("RFM95_LORA_HOP_CHANNEL: 0x"); Serial.println(rfm.readRawRegister(RFM95_LORA_HOP_CHANNEL), HEX);
           Serial.println("Block returned other than TX_DONE");
           break;
       }
