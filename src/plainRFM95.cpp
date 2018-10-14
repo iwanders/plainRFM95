@@ -267,8 +267,8 @@ void plainRFM95::transmit()
   seekFIFO(fifo_tx_);
   writeRegister(RFM95_DIO_MAPPING1, RFM95_LORA_DIO0_TX_DONE << RFM95_DIO_MAPPING_DIO0_SHIFT);
 
-  // Setup interrupt for Tx Done.
-  //  writeRegister(RFM95_LORA_IRQ_FLAGS, ~(RFM95_LORA_IRQ_TX_DONE));
+  // Setup interrupt for Tx Done, mask all others.
+  writeRegister(RFM95_LORA_IRQ_MASK, ~(RFM95_LORA_IRQ_TX_DONE));
   setMode(RFM95_MODE_TX);
 }
 
@@ -284,6 +284,8 @@ void plainRFM95::receive()
   // Change the DIO Mapping
   writeRegister(RFM95_DIO_MAPPING1, RFM95_LORA_DIO0_RX_DONE << RFM95_DIO_MAPPING_DIO0_SHIFT);
 
+  // Set interrupts for Rx events only.
+  writeRegister(RFM95_LORA_IRQ_MASK, ~(RFM95_LORA_IRQ_RX_TIMEOUT | RFM95_LORA_IRQ_RX_DONE | RFM95_LORA_IRQ_CRC_ERROR));
   // Switch modes.
   setMode(RFM95_MODE_RX_CONTINUOUS);
 }

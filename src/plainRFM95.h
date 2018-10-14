@@ -210,6 +210,21 @@ public:
 
   /**
    * @brief Polls the status register and returns enum based on the state.
+   * The possible states depend on the mode.
+   * Receive:
+   *   RX_DONE_INVALID_PACKET
+   *   RX_DONE_VALID_PACKET
+   *   TIMEOUT
+   *   NONE
+   * Transmit:
+   *   TX_DONE
+   *   TIMEOUT
+   *   NONE
+   * CAD:
+   *   CAD_DONE_NO_SIGNAL
+   *   CAD_DONE_SIGNAL
+   *   TIMEOUT
+   *   NONE
    */
   IRQState poll();
 

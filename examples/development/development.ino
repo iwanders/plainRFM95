@@ -73,30 +73,70 @@ void setup()
 void sender()
 {
   Serial.println("Sender");
-  uint8_t buf[255] = {0};
-  uint32_t& ctr = *reinterpret_cast<uint32_t*>(buf);
+
+  uint8_t sbuf[255] = {0};
+  uint8_t rbuf[255] = {0};
+  uint32_t& s_ctr = reinterpret_cast<uint32_t&>(sbuf);
+  uint32_t& r_ctr = reinterpret_cast<uint32_t&>(rbuf);
+
   const uint8_t len = 32;
+
+  bool waiting_for_response = false;
+  rfm.standby();
   while(1)
   {
-    delay(1000);
-    ctr++;
-    digitalWrite(LED_BUILTIN, HIGH);
-    rfm.preparePayload(buf, len);
-    rfm.transmit();
-    switch (rfm.block())
+    if (waiting_for_response)
     {
-      case plainRFM95::TX_DONE:
-        digitalWrite(LED_BUILTIN, LOW);
-        Serial.print("Sent: "); hexprint(buf, len);
-        break;
-      case plainRFM95::CAD_DONE_SIGNAL:
-        digitalWrite(LED_BUILTIN, LOW);
-        Serial.print("CAD!!");
-        break;
-      default:
-        Serial.print("irq: 0x"); Serial.println(rfm.readRawRegister(RFM95_LORA_IRQ_FLAGS), HEX);
-        Serial.println("Transmitting");
-        break;
+      // Do the receive step, block up to 1000 ms on trying to receive a message.
+      rfm.receive();
+      switch (rfm.block(1000))
+      {
+        case plainRFM95::RX_DONE_VALID_PACKET:
+          // done, got packet.
+          break;  // show packet stats
+        case plainRFM95::RX_DONE_INVALID_PACKET:
+          Serial.print("Received invalid packet :(");
+          waiting_for_response = false;
+          break;  // show packet stats
+        case plainRFM95::TIMEOUT:
+          Serial.print("Timed out waiting on: 0x"); Serial.println(s_ctr, HEX);
+          waiting_for_response = false;
+          continue;
+        default:
+          Serial.print("wait irq: 0x"); Serial.println(rfm.readRawRegister(RFM95_LORA_IRQ_FLAGS), HEX);
+          waiting_for_response = false;
+          continue;
+      }
+      rfm.standby();  // stop listening.
+      uint8_t rlen = rfm.readRxData(&rbuf);
+      if (s_ctr != r_ctr)
+      {
+        Serial.print("Incorrect counters, sent: 0x"); Serial.print(s_ctr, HEX); Serial.print(" received: 0x");Serial.println(r_ctr, HEX);
+      }
+      Serial.print("Read: "); hexprint(rbuf, rlen);
+      rfm.printPacketStats();
+      waiting_for_response = false;
+    }
+    else
+    {
+      rfm.standby();  // stop listening.
+      delay(100);
+      s_ctr++;
+      digitalWrite(LED_BUILTIN, HIGH);
+      rfm.preparePayload(sbuf, len);
+      rfm.transmit();
+      switch (rfm.block())
+      {
+        case plainRFM95::TX_DONE:
+          digitalWrite(LED_BUILTIN, LOW);
+          Serial.print("Sent: "); hexprint(sbuf, len);
+          break;
+        default:
+          Serial.print("sent irq: 0x"); Serial.println(rfm.readRawRegister(RFM95_LORA_IRQ_FLAGS), HEX);
+          Serial.println("Block returned other than TX_DONE");
+          break;
+      }
+      waiting_for_response = true;
     }
   }
 }
@@ -104,9 +144,10 @@ void sender()
 void receiver()
 {
   Serial.println("Receiver");
-  rfm.receive();
   while(1)
   {
+    // Wait on message
+    rfm.receive();
     switch (rfm.block())
     {
       case plainRFM95::RX_DONE_INVALID_PACKET:
@@ -114,16 +155,38 @@ void receiver()
         continue;
       default:
         Serial.print("irq: 0x"); Serial.println(rfm.readRawRegister(RFM95_LORA_IRQ_FLAGS), HEX);
+        rfm.receive(); // Clear IRQ and receive again.
         continue;
       case plainRFM95::RX_DONE_VALID_PACKET:
         break;
     }
+    rfm.standby();  // stop listening.
+
     // valid packet if we got here.
     uint8_t buf[255] = {0};
     uint8_t rlen = rfm.readRxData(&buf);
     Serial.print("Data: "); hexprint(buf, rlen);
     rfm.printPacketStats();
-    rfm.receive();
+
+    delay(10); // wait a little bit such that the other side can switch to receive.
+
+    // going to transmit this back.
+    rfm.preparePayload(buf, rlen);
+    rfm.transmit();
+
+    // block on transmission.
+    switch (rfm.block())
+    {
+      case plainRFM95::TX_DONE:
+        digitalWrite(LED_BUILTIN, LOW);
+        Serial.print("Sent back: "); hexprint(buf, rlen);
+        break;
+      default:
+        Serial.print("irq: 0x"); Serial.println(rfm.readRawRegister(RFM95_LORA_IRQ_FLAGS), HEX);
+        Serial.println("Block returned other than TX_DONE");
+        break;
+    }
+    // should've sent it, go back into receive.
   }
 }
 
