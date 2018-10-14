@@ -269,13 +269,14 @@ void plainRFM95::transmit()
 
   // Setup interrupt for Tx Done, mask all others.
   writeRegister(RFM95_LORA_IRQ_MASK, ~(RFM95_LORA_IRQ_TX_DONE));
+  clearIRQ();
+
   setMode(RFM95_MODE_TX);
 }
 
 void plainRFM95::receive()
 {
   standby();
-  clearIRQ();
 
   // rewind the fifo pointer to the rx position. It will still move if we are in receive mode for a while...
   // That's why we use the RX_CURRENT_ADDR to retrieve the packet.
@@ -286,6 +287,7 @@ void plainRFM95::receive()
 
   // Set interrupts for Rx events only.
   writeRegister(RFM95_LORA_IRQ_MASK, ~(RFM95_LORA_IRQ_RX_TIMEOUT | RFM95_LORA_IRQ_RX_DONE | RFM95_LORA_IRQ_CRC_ERROR));
+  clearIRQ();
   // Switch modes.
   setMode(RFM95_MODE_RX_CONTINUOUS);
 }
@@ -294,6 +296,7 @@ void plainRFM95::standby()
 {
   setMode(RFM95_MODE_STANDBY);
   writeRegister(RFM95_DIO_MAPPING1, RFM95_LORA_DIO0_NONE << RFM95_DIO_MAPPING_DIO0_SHIFT);
+  writeRegister(RFM95_LORA_IRQ_MASK, 0);
   clearIRQ();  
 }
 
@@ -305,6 +308,7 @@ void plainRFM95::sleep()
 
 void plainRFM95::clearIRQ()
 {
+  writeRegister(RFM95_LORA_IRQ_FLAGS, 0xFF);
   writeRegister(RFM95_LORA_IRQ_FLAGS, 0xFF);
 }
 
