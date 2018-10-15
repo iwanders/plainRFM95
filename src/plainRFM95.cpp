@@ -43,10 +43,60 @@ uint8_t plainRFM95::readRawRegister(uint8_t reg)
   return readRegister(reg);
 }
 
+void plainRFM95::dumpDebugRegisters()
+{
+  // Dump all registers...
+  const uint8_t registers[] = { RFM95_OPMODE,
+                                RFM95_BITRATE_MSB,
+                                RFM95_BITRATE_LSB,
+                                RFM95_FDEV_MSB,
+                                RFM95_FDEV_LSB,
+                                RFM95_FRF_MSB,
+                                RFM95_FRF_MID,
+                                RFM95_FRF_LSB,
+                                RFM95_PA_CONFIG,
+                                RFM95_PA_RAMP,
+                                RFM95_OCP,
+                                RFM95_LNA,
+                                RFM95_PACKET_SNR,
+                                RFM95_PACKET_RSSI,
+                                RFM95_DIO_MAPPING1,
+                                RFM95_DIO_MAPPING2,
+                                RFM95_VERSION,
+                                RFM95_TCXO,
+                                RFM95_PA_DAC,
+                                RFM95_FORMER_TEMP,
+                                RFM95_AGC_REF,
+                                RFM95_AGC_THRES_1,
+                                RFM95_AGC_THRES_2,
+                                RFM95_AGC_THRES_3,
+                                RFM95_LORA_FIFO_ADDR_PTR,
+                                RFM95_LORA_FIFO_TX_BASE_ADDR,
+                                RFM95_LORA_FIFO_RX_BASE_ADDR,
+                                RFM95_LORA_FIFO_RX_CURRENT_ADDR,
+                                RFM95_LORA_IRQ_MASK,
+                                RFM95_LORA_IRQ_FLAGS,
+                                RFM95_LORA_FIFO_RX_BYTES,
+                                RFM95_LORA_PACKET_SNR,
+                                RFM95_LORA_PACKET_RSSI,
+                                RFM95_LORA_HOP_CHANNEL,
+                                RFM95_LORA_MODEM_CONFIG1,
+                                RFM95_LORA_MODEM_CONFIG2,
+                                RFM95_LORA_PAYLOAD_LENGTH,
+                                RFM95_LORA_PAYLOAD_MAX_LENGTH };
+  for (uint8_t i = 0; i < sizeof(registers); i++)
+  {
+    Serial.print("R 0x");
+    Serial.print(registers[i], HEX);
+    Serial.print(": 0x");
+    Serial.println(readRegister(registers[i]), HEX);
+  }
+}
+
 void plainRFM95::writeRegister(uint8_t reg, uint8_t data)
 {
   SPI.beginTransaction(RFM95_SPI_SETTING);  // gain control of SPI bus
-  chipSelect(true);                                                  // assert chip select
+  chipSelect(true);                         // assert chip select
   SPI.transfer(RFM95_WRITE_REG_MASK | (reg & RFM95_READ_REG_MASK));
   SPI.transfer(data);
   chipSelect(false);     // deassert chip select
@@ -57,7 +107,7 @@ uint8_t plainRFM95::readRegister(uint8_t reg)
 {
   uint8_t foo;
   SPI.beginTransaction(RFM95_SPI_SETTING);  // gain control of SPI bus
-  chipSelect(true);                                                  // assert chip select
+  chipSelect(true);                         // assert chip select
   SPI.transfer((reg & RFM95_READ_REG_MASK));
   foo = SPI.transfer(0);
   chipSelect(false);     // deassert chip select
@@ -68,7 +118,7 @@ uint8_t plainRFM95::readRegister(uint8_t reg)
 void plainRFM95::writeMultiple(uint8_t reg, void* data, uint8_t len)
 {
   SPI.beginTransaction(RFM95_SPI_SETTING);  // gain control of SPI bus
-  chipSelect(true);                                                  // assert chip select
+  chipSelect(true);                         // assert chip select
   SPI.transfer(RFM95_WRITE_REG_MASK | (reg & RFM95_READ_REG_MASK));
   uint8_t* r = reinterpret_cast<uint8_t*>(data);
   for (uint8_t i = 0; i < len; i++)
@@ -82,7 +132,7 @@ void plainRFM95::writeMultiple(uint8_t reg, void* data, uint8_t len)
 void plainRFM95::readMultiple(uint8_t reg, void* data, uint8_t len)
 {
   SPI.beginTransaction(RFM95_SPI_SETTING);  // gain control of SPI bus
-  chipSelect(true);                                                  // assert chip select
+  chipSelect(true);                         // assert chip select
 
   SPI.transfer((reg & RFM95_READ_REG_MASK));
   uint8_t* r = reinterpret_cast<uint8_t*>(data);
@@ -117,7 +167,7 @@ void plainRFM95::writeFIFO(const void* buffer, uint8_t len)
 {
   const uint8_t* r = reinterpret_cast<const uint8_t*>(buffer);
   SPI.beginTransaction(RFM95_SPI_SETTING);  // gain control of SPI bus
-  chipSelect(true);                                                  // assert chip select
+  chipSelect(true);                         // assert chip select
   SPI.transfer(RFM95_WRITE_REG_MASK | (RFM95_FIFO & RFM95_READ_REG_MASK));
   for (uint8_t i = 0; i < len; i++)
   {
@@ -132,7 +182,7 @@ void plainRFM95::readFIFO(void* buffer, uint8_t len)
 {
   uint8_t* r = reinterpret_cast<uint8_t*>(buffer);
   SPI.beginTransaction(RFM95_SPI_SETTING);  // gain control of SPI bus
-  chipSelect(true);                                                  // assert chip select
+  chipSelect(true);                         // assert chip select
 
   SPI.transfer((RFM95_FIFO % RFM95_READ_REG_MASK));
   for (uint8_t i = 0; i < len; i++)
@@ -142,7 +192,6 @@ void plainRFM95::readFIFO(void* buffer, uint8_t len)
   chipSelect(false);     // deassert chip select
   SPI.endTransaction();  // release the SPI bus
 }
-
 
 void plainRFM95::setFrequency(uint32_t freq)
 {
@@ -162,7 +211,7 @@ uint8_t plainRFM95::readRxData(void* buffer)
 
 bool plainRFM95::readPacketCRCOn()
 {
-  return readRegister(RFM95_LORA_HOP_CHANNEL) & (1<<6);
+  return readRegister(RFM95_LORA_HOP_CHANNEL) & (1 << 6);
 }
 
 int8_t plainRFM95::readPacketSNR()
@@ -175,15 +224,19 @@ int8_t plainRFM95::readPacketSNR()
 int8_t plainRFM95::readPacketRSSI()
 {
   uint8_t raw_rssi = readRegister(RFM95_LORA_PACKET_RSSI);
-  return -137 + raw_rssi;  
+  return -137 + raw_rssi;
 }
 
 void plainRFM95::printPacketStats()
 {
-  Serial.print("   CRC: "); Serial.println(readPacketCRCOn());
-  Serial.print("   SNR: "); Serial.println(readPacketSNR());
-  Serial.print("   RSSI: "); Serial.println(readPacketRSSI());
-  Serial.print("   len: "); Serial.println(readRxLength());
+  Serial.print("   CRC: ");
+  Serial.println(readPacketCRCOn());
+  Serial.print("   SNR: ");
+  Serial.println(readPacketSNR());
+  Serial.print("   RSSI: ");
+  Serial.println(readPacketRSSI());
+  Serial.print("   len: ");
+  Serial.println(readRxLength());
 }
 
 void plainRFM95::writeTxFIFO(const void* buffer, uint8_t length)
@@ -209,7 +262,7 @@ bool plainRFM95::begin()
   standby();
 
   // Set up the Tx and Rx fifo addresses in the FIFO
-  const uint8_t Rx_FIFO_addr = 0;
+  const uint8_t Rx_FIFO_addr = 128;
   const uint8_t Tx_FIFO_addr = 0;
   const uint8_t payload_max_length = 128;
 
@@ -217,15 +270,19 @@ bool plainRFM95::begin()
   setTxFIFO(Tx_FIFO_addr);
   success &= (readRegister(RFM95_LORA_FIFO_TX_BASE_ADDR) == Tx_FIFO_addr);
   success &= (readRegister(RFM95_LORA_FIFO_RX_BASE_ADDR) == Rx_FIFO_addr);
-  writeRegister(RFM95_LORA_PAYLOAD_MAX_LENGTH, payload_max_length);
 
+  writeRegister(RFM95_LORA_PAYLOAD_MAX_LENGTH, payload_max_length);
   writeRegister(RFM95_LORA_IRQ_MASK, 0);
 
-  // set moderate power.
-  setFrequency((uint32_t) 434*1000*1000); // set the frequency.
-  setPower(10);
-  setModemConfig2(true);
+  setFrequency((uint32_t)434 * 1000 * 1000);  // set the frequency.
+  setPower(10);                               // set moderate power.
+  setModemConfig2(true);                      // enable CRC
   return success;
+}
+
+bool plainRFM95::notInLORA()
+{
+  return (readRegister(RFM95_OPMODE) & RFM95_OPMODE_LORA) == 0;
 }
 
 void plainRFM95::seekFIFO(uint8_t position)
@@ -255,7 +312,6 @@ void plainRFM95::setModemConfig2(bool crc_on, uint8_t spreading)
   writeRegister(RFM95_LORA_MODEM_CONFIG2, spreading | (crc_on ? RFM95_LORA_MODEM_CONFIG2_CRC_ON : 0));
 }
 
-
 void plainRFM95::preparePayload(const void* buffer, uint8_t length)
 {
   setMode(RFM95_MODE_STANDBY);
@@ -271,7 +327,7 @@ void plainRFM95::transmit()
   writeRegister(RFM95_DIO_MAPPING1, RFM95_LORA_DIO0_TX_DONE << RFM95_DIO_MAPPING_DIO0_SHIFT);
 
   // Setup interrupt for Tx Done, mask all others.
-  //  writeRegister(RFM95_LORA_IRQ_MASK, ~(RFM95_LORA_IRQ_TX_DONE));
+  writeRegister(RFM95_LORA_IRQ_MASK, ~(RFM95_LORA_IRQ_TX_DONE));
   clearIRQ();
 
   setMode(RFM95_MODE_TX);
@@ -290,7 +346,7 @@ void plainRFM95::receive()
   writeRegister(RFM95_DIO_MAPPING1, RFM95_LORA_DIO0_RX_DONE << RFM95_DIO_MAPPING_DIO0_SHIFT);
 
   // Set interrupts for Rx events only.
-  //  writeRegister(RFM95_LORA_IRQ_MASK, ~(RFM95_LORA_IRQ_RX_TIMEOUT | RFM95_LORA_IRQ_RX_DONE | RFM95_LORA_IRQ_CRC_ERROR));
+  writeRegister(RFM95_LORA_IRQ_MASK, ~(RFM95_LORA_IRQ_RX_DONE | RFM95_LORA_IRQ_CRC_ERROR));
   clearIRQ();
   // Switch modes.
   setMode(RFM95_MODE_RX_CONTINUOUS);
@@ -301,8 +357,8 @@ void plainRFM95::standby()
   activity_ = IDLE;
   setMode(RFM95_MODE_STANDBY);
   writeRegister(RFM95_DIO_MAPPING1, RFM95_LORA_DIO0_NONE << RFM95_DIO_MAPPING_DIO0_SHIFT);
-  //  writeRegister(RFM95_LORA_IRQ_MASK, 0);
-  clearIRQ();  
+  writeRegister(RFM95_LORA_IRQ_MASK, 0);
+  clearIRQ();
 }
 
 void plainRFM95::sleep()
@@ -314,9 +370,7 @@ void plainRFM95::sleep()
 void plainRFM95::clearIRQ()
 {
   writeRegister(RFM95_LORA_IRQ_FLAGS, 0xFF);
-  writeRegister(RFM95_LORA_IRQ_FLAGS, 0xFF);
 }
-
 
 plainRFM95::IRQState plainRFM95::block(uint32_t ms)
 {
@@ -328,18 +382,18 @@ plainRFM95::IRQState plainRFM95::block(uint32_t ms)
     {
       return TIMEOUT;
     }
-    delay(10);
     res = poll();
+    // Having no sleep here causes problems?
+    delayMicroseconds(100);
   }
   return res;
 }
 
-
 plainRFM95::IRQState plainRFM95::poll()
 {
-  // Multiple could be active if irq's weren't cleared properly...
+  /// @TODO(iwanders) Check if activity_ is still necessary, now that brownout is handled.
+
   const uint8_t irqs = readRegister(RFM95_LORA_IRQ_FLAGS);
-  Serial.print(" p: 0x"); Serial.print(irqs, HEX);
 
   if ((irqs & RFM95_LORA_IRQ_TX_DONE) && (activity_ == TX))
   {
@@ -372,7 +426,6 @@ plainRFM95::IRQState plainRFM95::poll()
   return NONE;
 }
 
-
 void plainRFM95::setPower(uint8_t Pout)
 {
   // probably have PA_BOOST on the default module...
@@ -388,4 +441,3 @@ void plainRFM95::setPower(uint8_t Pout)
   // Not sure if RFM95_PA_CONFIG_MAX_POWER has influence without RFO? Best set it to max.
   writeRegister(RFM95_PA_CONFIG, RFM95_PA_CONFIG_PA_SELECT | RFM95_PA_CONFIG_MAX_POWER | (Pout - Pmax + 15));
 }
-

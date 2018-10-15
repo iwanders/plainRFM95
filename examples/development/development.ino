@@ -1,5 +1,5 @@
-#include <SPI.h>
 #include <Arduino.h>
+#include <SPI.h>
 #include "plainRFM95.h"
 
 // Generic pins
@@ -13,6 +13,14 @@
 #define RFM95_DIO0_PIN 6
 #define RFM95_DIO2_PIN 2
 
+/*
+  Instantaneous power usage by these radio modules is not to be underestimated. You can use the following to detect and
+  correct brownout:
+  if (rfm.notInLORA())
+  {
+    rfm.begin();
+  }
+*/
 
 // Simple function to print a buffer in hexadecimal.
 void hexprint(const uint8_t* data, uint8_t length)
@@ -21,7 +29,7 @@ void hexprint(const uint8_t* data, uint8_t length)
   memset(buffer, 0, 2 * length + 1);
   for (uint16_t i = 0; i < length; ++i)
   {
-      sprintf(buffer + 2 * i, "%02x", data[i]);
+    sprintf(buffer + 2 * i, "%02x", data[i]);
   }
   Serial.println(buffer);
 }
@@ -37,8 +45,6 @@ void setup()
   delay(1000);
 
   // Setup the SPI bus.
-  //  pinMode(11, OUTPUT);
-  //  pinMode(12, INPUT_PULLUP);
   SPI.setSCK(SPI_SCK_PIN);
   SPI.begin();
 
@@ -52,7 +58,7 @@ void setup()
   pinMode(LED_BUILTIN, OUTPUT);
   digitalWrite(LED_BUILTIN, LOW);
 
-  plainRFM95::reset(RFM95_RST_PIN); // sent the RFM95 a hard-reset.
+  plainRFM95::reset(RFM95_RST_PIN);  // sent the RFM95 a hard-reset.
 
   // Do a count down to allow the serial connect.
   delay(10);
@@ -61,21 +67,23 @@ void setup()
     Serial.println(i);
     delay(500);
   }
+
   if (rfm.begin())
   {
     Serial.println("Setup correct");
   }
 
   // from https://forum.pjrc.com/threads/25522-Serial-Number-of-Teensy-3-1/page2
-  Serial.print("SIM_UIDL: "); Serial.println(SIM_UIDL, HEX);
+  Serial.print("SIM_UIDL: ");
+  Serial.println(SIM_UIDL, HEX);
 }
 
 void sender()
 {
   Serial.println("Sender");
 
-  uint8_t sbuf[255] = {0};
-  uint8_t rbuf[255] = {0};
+  uint8_t sbuf[255] = { 0 };
+  uint8_t rbuf[255] = { 0 };
   uint32_t& s_ctr = reinterpret_cast<uint32_t&>(sbuf);
   uint32_t& r_ctr = reinterpret_cast<uint32_t&>(rbuf);
 
@@ -83,8 +91,14 @@ void sender()
 
   bool waiting_for_response = false;
   rfm.standby();
-  while(1)
+  while (1)
   {
+    if (rfm.notInLORA())
+    {
+      Serial.println("Not in lora, calling begin to fix this.");
+      rfm.begin();
+    }
+
     if (waiting_for_response)
     {
       // Do the receive step, block up to 1000 ms on trying to receive a message.
@@ -99,45 +113,54 @@ void sender()
           waiting_for_response = false;
           break;  // show packet stats
         case plainRFM95::TIMEOUT:
-          Serial.print("Timed out waiting on: 0x"); Serial.println(s_ctr, HEX);
+          Serial.print("Timed out waiting on: 0x");
+          Serial.println(s_ctr, HEX);
           waiting_for_response = false;
           continue;
         default:
-          Serial.print("wait irq: 0x"); Serial.println(rfm.readRawRegister(RFM95_LORA_IRQ_FLAGS), HEX);
-          Serial.print("RFM95_LORA_HOP_CHANNEL: 0x"); Serial.println(rfm.readRawRegister(RFM95_LORA_HOP_CHANNEL), HEX);
           waiting_for_response = false;
           continue;
       }
+
       rfm.standby();  // stop listening.
       uint8_t rlen = rfm.readRxData(&rbuf);
+
       if (s_ctr != r_ctr)
       {
-        Serial.print("Incorrect counters, sent: 0x"); Serial.print(s_ctr, HEX); Serial.print(" received: 0x");Serial.println(r_ctr, HEX);
+        Serial.print("Incorrect counters, sent: 0x");
+        Serial.print(s_ctr, HEX);
+        Serial.print(" received: 0x");
+        Serial.println(r_ctr, HEX);
       }
-      Serial.print("Read: "); hexprint(rbuf, rlen);
+      Serial.print("Read: ");
+      hexprint(rbuf, rlen);
       rfm.printPacketStats();
+
       waiting_for_response = false;
     }
     else
     {
       rfm.standby();  // stop listening.
+
       delay(100);
+
       s_ctr++;
       digitalWrite(LED_BUILTIN, HIGH);
+
       rfm.preparePayload(sbuf, len);
       rfm.transmit();
       switch (rfm.block(1000))
       {
         case plainRFM95::TX_DONE:
           digitalWrite(LED_BUILTIN, LOW);
-          Serial.print("Sent: "); hexprint(sbuf, len);
+          Serial.print("Sent: ");
+          hexprint(sbuf, len);
           break;
         default:
-          Serial.print("sent irq: 0x"); Serial.println(rfm.readRawRegister(RFM95_LORA_IRQ_FLAGS), HEX);
-          Serial.print("RFM95_LORA_HOP_CHANNEL: 0x"); Serial.println(rfm.readRawRegister(RFM95_LORA_HOP_CHANNEL), HEX);
           Serial.println("Block returned other than TX_DONE");
           break;
       }
+
       waiting_for_response = true;
     }
   }
@@ -146,18 +169,23 @@ void sender()
 void receiver()
 {
   Serial.println("Receiver");
-  while(1)
+  while (1)
   {
+    if (rfm.notInLORA())
+    {
+      Serial.println("Not in lora, calling begin to fix this.");
+      rfm.begin();
+    }
+
     // Wait on message
     rfm.receive();
-    switch (rfm.block())
+    switch (rfm.block(10000))  // wait for 10 seconds, then check if we dropped out of lora.
     {
       case plainRFM95::RX_DONE_INVALID_PACKET:
-        rfm.receive(); // drops the packet.
+        rfm.receive();  // drops the packet.
         continue;
       default:
-        Serial.print("irq: 0x"); Serial.println(rfm.readRawRegister(RFM95_LORA_IRQ_FLAGS), HEX);
-        rfm.receive(); // Clear IRQ and receive again.
+        rfm.receive();  // Clear IRQ and receive again.
         continue;
       case plainRFM95::RX_DONE_VALID_PACKET:
         break;
@@ -165,26 +193,27 @@ void receiver()
     rfm.standby();  // stop listening.
 
     // valid packet if we got here.
-    uint8_t buf[255] = {0};
+    uint8_t buf[255] = { 0 };
     uint8_t rlen = rfm.readRxData(&buf);
-    Serial.print("Data: "); hexprint(buf, rlen);
+    Serial.print("Data: ");
+    hexprint(buf, rlen);
     rfm.printPacketStats();
 
-    delay(10); // wait a little bit such that the other side can switch to receive.
+    delay(10);  // wait a little bit such that the other side can switch to receive.
 
     // going to transmit this back.
     rfm.preparePayload(buf, rlen);
     rfm.transmit();
 
     // block on transmission.
-    switch (rfm.block())
+    switch (rfm.block(1000))
     {
       case plainRFM95::TX_DONE:
         digitalWrite(LED_BUILTIN, LOW);
-        Serial.print("Sent back: "); hexprint(buf, rlen);
+        Serial.print("Sent back: ");
+        hexprint(buf, rlen);
         break;
       default:
-        Serial.print("irq: 0x"); Serial.println(rfm.readRawRegister(RFM95_LORA_IRQ_FLAGS), HEX);
         Serial.println("Block returned other than TX_DONE");
         break;
     }
@@ -194,17 +223,10 @@ void receiver()
 
 void loop()
 {
-  while (Serial.available())
-  {
-    auto z = Serial.read();
-    Serial.print("Read: "); Serial.println(z);
-    Serial.print("C: "); Serial.write(z); Serial.println();
-  }
-
   // Go receiver or sender based on the unique ID in the chip.
   if (SIM_UIDL == 0x45164E45)
   {
-    receiver();    
+    receiver();
   }
   else
   {

@@ -18,7 +18,6 @@
   SOFTWARE.
 */
 
-
 #ifndef PLAIN_RFM95_H
 #define PLAIN_RFM95_H
 
@@ -42,27 +41,28 @@ class plainRFM95
 public:
   enum IRQState : uint8_t
   {
-    NONE,                    //!< nothing yet, still listening or sending, or idling.
+    NONE,  //!< nothing yet, still listening or sending, or idling.
 
     RX_DONE_INVALID_PACKET,  //!< Rx Done happened, CRC is incorrect.
     RX_DONE_VALID_PACKET,    //!< Rx Done, CRC was correct, packet to read.
 
-    CAD_DONE_NO_SIGNAL, //!< The CAD is finished, but no signal was detected.
-    CAD_DONE_SIGNAL,    //!< The CAD is finished, and a signal was detected
+    CAD_DONE_NO_SIGNAL,  //!< The CAD is finished, but no signal was detected.
+    CAD_DONE_SIGNAL,     //!< The CAD is finished, and a signal was detected
 
-    TX_DONE,            //!< Transmission was finished.
+    TX_DONE,  //!< Transmission was finished.
 
-    TIMEOUT,            //!< Timeout has happened, can only happen if blocking with optional argument of Rx single.
+    TIMEOUT,  //!< Timeout has happened, can only happen if blocking with optional argument of Rx single.
   };
-  enum Activity : uint8_t 
+  enum Activity : uint8_t
   {
     IDLE,
     RX,
     TX,
     CAD
   };
+
 protected:
-  uint8_t cs_pin_;  //!< chip select pin.
+  uint8_t cs_pin_;   //!< chip select pin.
   uint8_t fifo_tx_;  //!< Fifo Tx base address.
   uint8_t fifo_rx_;  //!< Fifo Rx base address.
   Activity activity_ = IDLE;
@@ -124,12 +124,10 @@ protected:
   void clearIRQ();
 
 public:
-
   /**
    * @param cs_pin The chip select pin to use.
    */
   plainRFM95(uint8_t cs_pin);
-  
 
   /**
    * @brief Performs a hardware reset by pulling the reset pin low.
@@ -139,8 +137,16 @@ public:
 
   /**
    * @brief Switch to LORA mode and confirm spi connections.
+   * @return True if registers could be set correctly, confirming the SPI connection false otherwise.
    */
   bool begin();
+
+  /**
+   * @brief If the module resets for any reason, the LORA bit in the opmode gets flipped to false after the reset.
+   *        This can be used to detect whether or not begin() has to be called again.
+   * @return True if the radio module is not in LORA mode and begin() needs to be called.
+   */
+  bool notInLORA();
 
   /**
    * @brief Provides raw register read access for debugging.
@@ -149,6 +155,10 @@ public:
    */
   uint8_t readRawRegister(uint8_t reg);
 
+  /**
+   * @brief Dump registers for debugging.
+   */
+  void dumpDebugRegisters();
 
   /**
    * @brief Set output power.
@@ -157,7 +167,7 @@ public:
   void setPower(uint8_t Pout);
 
   /**
-   * @brief Set the frequency to operate on in Hz (433 * 1000 * 1000) for MHz
+   * @brief Set the frequency to operate on in Hz (433 * 1000 * 1000) for 433.0 MHz
    */
   void setFrequency(uint32_t freq);
 
@@ -177,13 +187,14 @@ public:
   uint8_t readRxLength();
 
   /**
-   * @brief Reads the current packet from the fifo. Automatically sets the cursor.
+   * @brief Reads the current packet from the fifo.
    * @param buffer The address to write the received packet to.
+   * @return The length of the packet that was just read.
    */
   uint8_t readRxData(void* buffer);
 
   /**
-   * @brief Reads the state whether the CRC was enabled in the packet header.
+   * @brief Reads whether the last packet had it's CRC enabled in the header.
    */
   bool readPacketCRCOn();
 
@@ -191,22 +202,26 @@ public:
    * @brief Reads the last packet's SNR value, in dB
    */
   int8_t readPacketSNR();
+
   /**
-   * @brief Reads the last packet's SNR value, in dB
+   * @brief Reads the last packet's SNR value, in dBm
    */
   int8_t readPacketRSSI();
 
-  void printPacketStats();
-
   /**
-   * @brief Switches to Tx mode to transmit the setup data, switches DIO0 mapping to TxDone.
+   * @brief Print stats about the last received message. (CRC, SNR, RSSI, length)
    */
-  void transmit();
+  void printPacketStats();
 
   /**
    * @brief Stores a payload in the fifo, sets the length register.
    */
   void preparePayload(const void* buffer, uint8_t length);
+
+  /**
+   * @brief Switches to Tx mode to transmit the setup data, switches DIO0 mapping to TxDone.
+   */
+  void transmit();
 
   /**
    * @brief Go into standby.
@@ -220,7 +235,24 @@ public:
 
   /**
    * @brief Polls the status register and returns enum based on the state.
-   * The possible states depend on the mode.
+   * @return The possible states depend on the previously set mode:
+   * Receive:
+   *   RX_DONE_INVALID_PACKET
+   *   RX_DONE_VALID_PACKET
+   *   NONE
+   * Transmit:
+   *   TX_DONE
+   *   NONE
+   * CAD:
+   *   CAD_DONE_NO_SIGNAL
+   *   CAD_DONE_SIGNAL
+   *   NONE
+   */
+  IRQState poll();
+
+  /**
+   * @brief Blocks on poll() untill it returns something else than NONE, or timeout duration has been reached.
+   * @return The possible states depend on the previously set mode:
    * Receive:
    *   RX_DONE_INVALID_PACKET
    *   RX_DONE_VALID_PACKET
@@ -236,14 +268,7 @@ public:
    *   TIMEOUT
    *   NONE
    */
-  IRQState poll();
-
-  /**
-   * @brief Blocks on poll() untill it returns something else than None, or timeout duration has been reached.
-   */
-  IRQState block(uint32_t ms=0);
-
-
+  IRQState block(uint32_t ms = 0);
 };
 
 // PLAIN_RFM95_H

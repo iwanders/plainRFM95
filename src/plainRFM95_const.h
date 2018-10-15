@@ -18,55 +18,50 @@
   SOFTWARE.
 */
 
-
-
 // Generic registers
-#define RFM95_FIFO           0x00
-#define RFM95_OPMODE         0x01
+#define RFM95_FIFO 0x00
+#define RFM95_OPMODE 0x01
 
-#define RFM95_BITRATE_MSB    0x02
-#define RFM95_BITRATE_LSB    0x03
+#define RFM95_BITRATE_MSB 0x02
+#define RFM95_BITRATE_LSB 0x03
 
-#define RFM95_FDEV_MSB       0x04
-#define RFM95_FDEV_LSB       0x05
+#define RFM95_FDEV_MSB 0x04
+#define RFM95_FDEV_LSB 0x05
 
-#define RFM95_FRF_MSB        0x06
-#define RFM95_FRF_MID        0x07
-#define RFM95_FRF_LSB        0x08
+#define RFM95_FRF_MSB 0x06
+#define RFM95_FRF_MID 0x07
+#define RFM95_FRF_LSB 0x08
 
-#define RFM95_PA_CONFIG      0x09
-#define RFM95_PA_RAMP        0x0A
-#define RFM95_OCP            0x0B
-#define RFM95_LNA            0x0C
+#define RFM95_PA_CONFIG 0x09
+#define RFM95_PA_RAMP 0x0A
+#define RFM95_OCP 0x0B
+#define RFM95_LNA 0x0C
 
 #define RFM95_PACKET_SNR 0x19
 #define RFM95_PACKET_RSSI 0x1A
 
+#define RFM95_DIO_MAPPING1 0x40
+#define RFM95_DIO_MAPPING2 0x41
+#define RFM95_VERSION 0x42
+#define RFM95_TCXO 0x4B
+#define RFM95_PA_DAC 0x4D
 
-#define RFM95_DIO_MAPPING1  0x40
-#define RFM95_DIO_MAPPING2  0x41
-#define RFM95_VERSION       0x42
-#define RFM95_TCXO          0x4B
-#define RFM95_PA_DAC        0x4D
+#define RFM95_FORMER_TEMP 0x5B
 
-#define RFM95_FORMER_TEMP   0x5B
-
-#define RFM95_AGC_REF       0x61
-#define RFM95_AGC_THRES_1   0x62
-#define RFM95_AGC_THRES_2   0x63
-#define RFM95_AGC_THRES_3   0x64
-
-
+#define RFM95_AGC_REF 0x61
+#define RFM95_AGC_THRES_1 0x62
+#define RFM95_AGC_THRES_2 0x63
+#define RFM95_AGC_THRES_3 0x64
 
 /// Generic bits
 
 #define RFM95_WRITE_REG_MASK 0x80
 #define RFM95_READ_REG_MASK 0x7F
 
-#define RFM95_OPMODE_LORA (1<<7)
-#define RFM95_OPMODE_ACCESS_SHARED_REG (1<<6)
-#define RFM95_OPMODE_LOW_FREQUENCY_MODE_ON (1<<3)
-#define RFM95_MODE_SLEEP   0b000
+#define RFM95_OPMODE_LORA (1 << 7)
+#define RFM95_OPMODE_ACCESS_SHARED_REG (1 << 6)
+#define RFM95_OPMODE_LOW_FREQUENCY_MODE_ON (1 << 3)
+#define RFM95_MODE_SLEEP 0b000
 #define RFM95_MODE_STANDBY 0b001
 #define RFM95_MODE_FS_TX 0b010
 #define RFM95_MODE_TX 0b011
@@ -77,7 +72,7 @@
 
 #define RFM95_DIO_MAPPING_DIO0_SHIFT 6
 
-#define RFM95_PA_CONFIG_PA_SELECT (1<<7)
+#define RFM95_PA_CONFIG_PA_SELECT (1 << 7)
 #define RFM95_PA_CONFIG_MAX_POWER (0b111 << 4)
 
 #define RFM95_PA_DAC_NORMAL 0x04
@@ -104,7 +99,6 @@
 #define RFM95_LORA_PAYLOAD_LENGTH 0x22
 #define RFM95_LORA_PAYLOAD_MAX_LENGTH 0x23
 
-
 // LORA bits
 
 #define RFM95_LORA_DIO0_RX_DONE 0b00
@@ -112,14 +106,14 @@
 #define RFM95_LORA_DIO0_CAD_DONE 0b10
 #define RFM95_LORA_DIO0_NONE 0b11
 
-#define RFM95_LORA_IRQ_RX_TIMEOUT (1<<7)
-#define RFM95_LORA_IRQ_RX_DONE (1<<6)
-#define RFM95_LORA_IRQ_CRC_ERROR (1<<5)
-#define RFM95_LORA_IRQ_VALID_HEADER (1<<4)
-#define RFM95_LORA_IRQ_TX_DONE (1<<3)
-#define RFM95_LORA_IRQ_CAD_DONE (1<<2)
-#define RFM95_LORA_IRQ_FHSS_CHANGE (1<<1)
-#define RFM95_LORA_IRQ_CAD_DETECTED (1<<0)
+#define RFM95_LORA_IRQ_RX_TIMEOUT (1 << 7)
+#define RFM95_LORA_IRQ_RX_DONE (1 << 6)
+#define RFM95_LORA_IRQ_CRC_ERROR (1 << 5)
+#define RFM95_LORA_IRQ_VALID_HEADER (1 << 4)
+#define RFM95_LORA_IRQ_TX_DONE (1 << 3)
+#define RFM95_LORA_IRQ_CAD_DONE (1 << 2)
+#define RFM95_LORA_IRQ_FHSS_CHANGE (1 << 1)
+#define RFM95_LORA_IRQ_CAD_DETECTED (1 << 0)
 
 #define RFM95_LORA_MODEM_CONFIG1_BW_7_8_KHZ (0b0000 << 4)
 #define RFM95_LORA_MODEM_CONFIG1_BW_10_4_KHZ (0b0001 << 4)
@@ -148,6 +142,3 @@
 
 // Technically the datasheet here states received from packet header, but that doesn't make sense.
 #define RFM95_LORA_MODEM_CONFIG2_CRC_ON (1 << 2)
-
-
-
