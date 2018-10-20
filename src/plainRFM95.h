@@ -60,7 +60,7 @@ CR = Coding rate (1 corresponds to 4/5, 4 to 4/8)
 Tpayload = Npayload * Ts
 Tpacket = Tpreamble + Tpayload
 
-# Copy-paste ready Python code:
+# Copy-paste ready Python3 code:
 
 BW = 125e3
 CR = 4/5
@@ -76,8 +76,8 @@ Rs = BW / (SPREAD)
 Tsym = 1.0 / Rs
 Tpreamble = (Npreamble + 4.25) * Tsym
 DE = (0 if Tsym < 16e-3 else 1)
-Npayload = 8 + max(ceil(8 * Npayload - 4 * log2(SPREAD) + 28 + 16 * CRC - 20 * IH) / (2 * log2(SPREAD) - 2 * DE) * ((1/(CR) * 4 - 4) + 4), 0)
-Tpayload = Npayload * Tsym
+Spayload = 8 + max(ceil(8 * Npayload - 4 * log2(SPREAD) + 28 + 16 * CRC - 20 * IH) / (4*(log2(SPREAD) - 2 * DE)) * ((1/(CR) * 4 - 4) + 4), 0)
+Tpayload = Spayload * Tsym
 Tpacket = Tpreamble + Tpayload
 print("Low data rate should be: {}".format(DE))
 print("Tpayload: {:f}\nTpreamble: {:f}\nTpacket: {:f}".format(Tpayload, Tpreamble, Tpacket))
@@ -274,7 +274,7 @@ public:
    *        RFM95_LORA_MODEM_CONFIG1_CODING_4_6
    *        RFM95_LORA_MODEM_CONFIG2_SPREADING_256
    *        low_data_rate_optimization = false, agc_auto_on = false;
-   *        BW = 125e3;CR = 4/6;SPREAD = 125;Npreamble = 8;Npayload = 64
+   *        BW = 125e3;CR = 4/6;SPREAD = 256;Npreamble = 8;Npayload = 64
    */
   void setModemConfigRobust();
 

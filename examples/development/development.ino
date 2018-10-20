@@ -73,16 +73,24 @@ void setup()
     delay(500);
   }
 
-  if (rfm.begin())
-  {
-    Serial.println("Setup correct");
-  }
-
-  rfm.setModemConfigRobust();
+  setupRadio();
 
   // from https://forum.pjrc.com/threads/25522-Serial-Number-of-Teensy-3-1/page2
   Serial.print("SIM_UIDL: ");
   Serial.println(SIM_UIDL, HEX);
+}
+
+void setupRadio()
+{
+  plainRFM95::reset(RFM95_RST_PIN);  // sent the RFM95 a hard-reset.
+  if (rfm.begin())
+  {
+    Serial.println("Setup correct");
+  }
+  //  rfm.setPreamble(160);
+
+  rfm.setModemConfigRobust();
+
 }
 
 
@@ -99,14 +107,14 @@ void sender()
   const uint8_t len = 64;
 
   bool waiting_for_response = false;
+  elapsedMillis tx_duration = 0;
   rfm.standby();
   while (1)
   {
     if (rfm.notInLORA())
     {
-      Serial.println("Not in lora, calling begin to fix this.");
-      rfm.begin();
-      rfm.setModemConfigRobust();
+      Serial.println("Not in lora, calling setupRadio to fix this.");
+      setupRadio();
     }
 
     if (waiting_for_response)
@@ -159,6 +167,7 @@ void sender()
       digitalWrite(LED_BUILTIN, HIGH);
 
       rfm.preparePayload(sbuf, len);
+      tx_duration = 0;
       rfm.transmit();
       switch (rfm.block(1000))
       {
@@ -171,6 +180,7 @@ void sender()
           Serial.println("Block returned other than TX_DONE");
           break;
       }
+      Serial.print("Tx duration: "); Serial.println(tx_duration);
 
       waiting_for_response = true;
     }
@@ -184,9 +194,8 @@ void receiver()
   {
     if (rfm.notInLORA())
     {
-      Serial.println("Not in lora, calling begin to fix this.");
-      rfm.begin();
-      rfm.setModemConfigRobust();
+      Serial.println("Not in lora, calling setupRadio to fix this.");
+      setupRadio();
     }
 
     // Wait on message
