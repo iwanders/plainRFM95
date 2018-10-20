@@ -120,7 +120,7 @@ void sender()
     if (waiting_for_response)
     {
       // Do the receive step, block up to 1000 ms on trying to receive a message.
-      rfm.receive();
+      rfm.receiveSingle();
       switch (rfm.block(1000))
       {
         case plainRFM95::RX_DONE_VALID_PACKET:

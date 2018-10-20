@@ -284,6 +284,11 @@ public:
   void receive();
 
   /**
+   * @brief Switches the radio to single Rx mode. Switches DIO0 mapping to RxDone.
+   */
+  void receiveSingle();
+
+  /**
    * @brief Read the number of bytes received, this is the length of the packet in the FIFO.
    */
   uint8_t readRxLength();
