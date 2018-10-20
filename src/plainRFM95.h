@@ -36,6 +36,55 @@
 
 #define RFM95_SPI_SETTING SPISettings(80000000, MSBFIRST, SPI_MODE0)
 
+/*
+Symbol rate, p28 S1276
+
+Rs = BW / 2**SF
+
+Bw = Bandwidth
+SF = Spreading factor
+
+Tsym = 1.0 / Rs
+
+p31 SX1276
+Tpreamble = (Npreamble + 4.25) * Tsym
+
+Npayload = 8 + max(ceil((8 * PL - 4 * SF + 28 + 16 * CRC - 20 * IH)/(2 * SF - 2 * DE))*(CR + 4), 0)
+PL = Number of payload bytes (1-255)
+SF = Spreading factor (6 - 12)
+IH = Implicit header, 0 when header, 1 when no header.
+DE = Low data rate optimize enabled (1 = enabled, 0 = disabled)
+CRC = 1 if CRC enabled
+CR = Coding rate (1 corresponds to 4/5, 4 to 4/8)
+
+Tpayload = Npayload * Ts
+Tpacket = Tpreamble + Tpayload
+
+# Copy-paste ready Python code:
+
+BW = 125e3
+CR = 4/5
+SPREAD = 128
+Npreamble = 8
+Npayload = 32
+
+CRC = 1
+IH = 0
+
+from math import ceil, log2
+Rs = BW / (SPREAD)
+Tsym = 1.0 / Rs
+Tpreamble = (Npreamble + 4.25) * Tsym
+DE = (0 if Tsym < 16e-3 else 1)
+Npayload = 8 + max(ceil(8 * Npayload - 4 * log2(SPREAD) + 28 + 16 * CRC - 20 * IH) / (2 * log2(SPREAD) - 2 * DE) * ((1/(CR) * 4 - 4) + 4), 0)
+Tpayload = Npayload * Tsym
+Tpacket = Tpreamble + Tpayload
+print("Low data rate should be: {}".format(DE))
+print("Tpayload: {:f}\nTpreamble: {:f}\nTpacket: {:f}".format(Tpayload, Tpreamble, Tpacket))
+
+
+ */
+
 class plainRFM95
 {
 public:
@@ -172,9 +221,62 @@ public:
   void setFrequency(uint32_t freq);
 
   /**
+   * @brief Set the preamble length, defaults to 8.
+   */
+  void setPreamble(uint16_t preamble_length);
+
+  /**
+   * @brief Set preamble length, in symbols.
+   */
+
+  /**
+   * @brief Set the signal bandwith and coding rate of the transmission.
+   * @param bandwidth The signal bandwidth to use. See the constants:
+   *        RFM95_LORA_MODEM_CONFIG1_BW_7_8_KHZ - RFM95_LORA_MODEM_CONFIG1_BW_500_KHZ
+   * @param coding_rate The error coding rate. RFM95_LORA_MODEM_CONFIG1_CODING_4_5 to 4_8
+   * @note p25 SX1276: For all bandwidths lower than 62.5 kHz, it is advised to use a TCXO as a frequency reference.
+   *       This is required to meet the frequency error tolerance specifications given in the Electrical Specification.
+   */
+  void setModemConfig1(uint8_t bandwidth, uint8_t coding_rate);
+
+  /**
    * @brief Sets the modem config 2 register, containing spreading and crc (also upper part of Rx timeout).
+   * @param spreading The number of chirps per symbol. RFM95_LORA_MODEM_CONFIG2_SPREADING_64 to 4096
+   * @param crc True; CRC is used to verify packet integrity. Set in the header of the packet.
+   * @note p30 SX1276: Note With SF = 6 (RFM95_LORA_MODEM_CONFIG2_SPREADING_64) selected, implicit header mode is the
+   *       only mode of operation possible.
    */
   void setModemConfig2(bool crc_on, uint8_t spreading = RFM95_LORA_MODEM_CONFIG2_SPREADING_128);
+
+  /**
+   * @brief Sets LNA gain option and low data rate optimization.
+   * @param low_data_rate_optimization mandated for when the symbol length exceeds 16ms, p114 SX1276.
+   * @param agc_auto_on False: LNA gain set by register LnaGain, True: LNA gain set by the internal AGC loop
+   */
+  void setModemConfig3(bool low_data_rate_optimization, bool agc_auto_on = false);
+
+  /**
+   * @brief Sets the default modem configuration parameters, but does enable CRC (which defaults to off.
+   *        crc = 1
+   *        RFM95_LORA_MODEM_CONFIG1_BW_125_KHZ
+   *        RFM95_LORA_MODEM_CONFIG1_CODING_4_5
+   *        RFM95_LORA_MODEM_CONFIG2_SPREADING_128
+   *        low_data_rate_optimization = false, agc_auto_on = false;
+   *        BW = 125e3;CR = 4/5;SPREAD = 128;Npreamble = 8;Npayload = 32
+   */
+  void setModemConfigDefault();
+
+  /**
+   * @brief Takes default, but increases error coding rate and spreading rate for more robust transmissions. Bw is kept
+   *        identical as to not run into transmission errors because of clock drift.
+   *        crc = 1
+   *        RFM95_LORA_MODEM_CONFIG1_BW_125_KHZ
+   *        RFM95_LORA_MODEM_CONFIG1_CODING_4_6
+   *        RFM95_LORA_MODEM_CONFIG2_SPREADING_256
+   *        low_data_rate_optimization = false, agc_auto_on = false;
+   *        BW = 125e3;CR = 4/6;SPREAD = 125;Npreamble = 8;Npayload = 64
+   */
+  void setModemConfigRobust();
 
   /**
    * @brief Switches to continuous Rx mode, switches DIO0 mapping to RxDone.

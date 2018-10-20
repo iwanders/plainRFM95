@@ -42,6 +42,14 @@ void setup()
   // Setup the USB port
   Serial.begin(9600);
 
+  // Block on serial port for testing.
+  pinMode(LED_BUILTIN, OUTPUT);
+  //  digitalWrite(LED_BUILTIN, HIGH);
+  //  while (!Serial)
+  //  {
+  //  }
+  //  digitalWrite(LED_BUILTIN, LOW);
+
   delay(1000);
 
   // Setup the SPI bus.
@@ -54,9 +62,6 @@ void setup()
   digitalWrite(RFM95_RST_PIN, HIGH);
   //  pinMode(RFM95_DIO2_PIN, INPUT_PULLUP);
 
-  // Setup led.
-  pinMode(LED_BUILTIN, OUTPUT);
-  digitalWrite(LED_BUILTIN, LOW);
 
   plainRFM95::reset(RFM95_RST_PIN);  // sent the RFM95 a hard-reset.
 
@@ -73,10 +78,13 @@ void setup()
     Serial.println("Setup correct");
   }
 
+  rfm.setModemConfigRobust();
+
   // from https://forum.pjrc.com/threads/25522-Serial-Number-of-Teensy-3-1/page2
   Serial.print("SIM_UIDL: ");
   Serial.println(SIM_UIDL, HEX);
 }
+
 
 void sender()
 {
@@ -86,8 +94,9 @@ void sender()
   uint8_t rbuf[255] = { 0 };
   uint32_t& s_ctr = reinterpret_cast<uint32_t&>(sbuf);
   uint32_t& r_ctr = reinterpret_cast<uint32_t&>(rbuf);
+  int8_t& r_rssi = reinterpret_cast<int8_t&>(*(rbuf + sizeof(r_ctr)));
 
-  const uint8_t len = 32;
+  const uint8_t len = 64;
 
   bool waiting_for_response = false;
   rfm.standby();
@@ -97,6 +106,7 @@ void sender()
     {
       Serial.println("Not in lora, calling begin to fix this.");
       rfm.begin();
+      rfm.setModemConfigRobust();
     }
 
     if (waiting_for_response)
@@ -135,6 +145,7 @@ void sender()
       Serial.print("Read: ");
       hexprint(rbuf, rlen);
       rfm.printPacketStats();
+      Serial.print("   Remote RSSI: "); Serial.println(r_rssi);
 
       waiting_for_response = false;
     }
@@ -175,6 +186,7 @@ void receiver()
     {
       Serial.println("Not in lora, calling begin to fix this.");
       rfm.begin();
+      rfm.setModemConfigRobust();
     }
 
     // Wait on message
@@ -194,10 +206,13 @@ void receiver()
 
     // valid packet if we got here.
     uint8_t buf[255] = { 0 };
+    uint32_t& r_ctr = reinterpret_cast<uint32_t&>(buf);
+    int8_t& r_rssi = reinterpret_cast<int8_t&>(*(buf + sizeof(r_ctr)));
     uint8_t rlen = rfm.readRxData(&buf);
     Serial.print("Data: ");
     hexprint(buf, rlen);
     rfm.printPacketStats();
+    r_rssi = rfm.readPacketRSSI();  // add our reception strength to the message payload.
 
     delay(10);  // wait a little bit such that the other side can switch to receive.
 

@@ -200,6 +200,11 @@ void plainRFM95::setFrequency(uint32_t freq)
   writeMultiple(RFM95_FRF_MSB, &frf, 3);
 }
 
+void plainRFM95::setPreamble(uint16_t preamble_length)
+{
+  writeMultiple(RFM95_LORA_PREAMBLE_MSB, &preamble_length, 2);
+}
+
 uint8_t plainRFM95::readRxData(void* buffer)
 {
   uint8_t pos = readRegister(RFM95_LORA_FIFO_RX_CURRENT_ADDR);
@@ -274,9 +279,9 @@ bool plainRFM95::begin()
   writeRegister(RFM95_LORA_PAYLOAD_MAX_LENGTH, payload_max_length);
   writeRegister(RFM95_LORA_IRQ_MASK, 0);
 
-  setFrequency((uint32_t)434 * 1000 * 1000);  // set the frequency.
+  setFrequency((uint32_t) 434 * 1000 * 1000);  // set the frequency.
   setPower(10);                               // set moderate power.
-  setModemConfig2(true);                      // enable CRC
+  setModemConfigDefault();
   return success;
 }
 
@@ -307,9 +312,36 @@ void plainRFM95::setMode(uint8_t mode)
   writeRegister(RFM95_OPMODE, RFM95_OPMODE_LORA | (mode & 0b111));
 }
 
+
+void plainRFM95::setModemConfig1(uint8_t bandwidth, uint8_t coding_rate)
+{
+  writeRegister(RFM95_LORA_MODEM_CONFIG1, (bandwidth & (0b1111 << 4)) | (coding_rate & (0b111 << 1)) | 0);
+}
+
 void plainRFM95::setModemConfig2(bool crc_on, uint8_t spreading)
 {
   writeRegister(RFM95_LORA_MODEM_CONFIG2, spreading | (crc_on ? RFM95_LORA_MODEM_CONFIG2_CRC_ON : 0));
+}
+
+void plainRFM95::setModemConfig3(bool low_data_rate_optimization, bool agc_auto_on)
+{
+  writeRegister(RFM95_LORA_MODEM_CONFIG3,
+                (low_data_rate_optimization ? RFM95_LORA_MODEM_CONFIG3_LOW_DATA_RATE_OPTIMIZE : 0) |
+                (agc_auto_on ? RFM95_LORA_MODEM_CONFIG3_AGC_AUTO_ON : 0));
+}
+
+void plainRFM95::setModemConfigDefault()
+{
+  setModemConfig1(RFM95_LORA_MODEM_CONFIG1_BW_125_KHZ, RFM95_LORA_MODEM_CONFIG1_CODING_4_5);
+  setModemConfig2(true, RFM95_LORA_MODEM_CONFIG2_SPREADING_128);
+  setModemConfig3(false, false);
+}
+
+void plainRFM95::setModemConfigRobust()
+{
+  setModemConfig1(RFM95_LORA_MODEM_CONFIG1_BW_125_KHZ, RFM95_LORA_MODEM_CONFIG1_CODING_4_6);
+  setModemConfig2(true, RFM95_LORA_MODEM_CONFIG2_SPREADING_256);
+  setModemConfig3(false, false);
 }
 
 void plainRFM95::preparePayload(const void* buffer, uint8_t length)
