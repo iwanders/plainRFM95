@@ -374,6 +374,10 @@ public:
    */
   IRQState block(uint32_t ms = 0);
 
+  /**
+   * @brief Return the current activity of the radio.
+   * @return IDLE, RX, TX or CAD
+   */
   Activity getActivity();
 };
 
