@@ -373,6 +373,8 @@ public:
    *   NONE
    */
   IRQState block(uint32_t ms = 0);
+
+  Activity getActivity();
 };
 
 // PLAIN_RFM95_H

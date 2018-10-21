@@ -489,3 +489,8 @@ void plainRFM95::setPower(uint8_t Pout)
   // Not sure if RFM95_PA_CONFIG_MAX_POWER has influence without RFO? Best set it to max.
   writeRegister(RFM95_PA_CONFIG, RFM95_PA_CONFIG_PA_SELECT | RFM95_PA_CONFIG_MAX_POWER | (Pout - Pmax + 15));
 }
+
+plainRFM95::Activity plainRFM95::getActivity()
+{
+  return activity_;
+}
