@@ -19,10 +19,6 @@
 */
 #include "plainRFM95.h"
 
-plainRFM95::plainRFM95(uint8_t cs_pin) : cs_pin_(cs_pin)
-{
-}
-
 void plainRFM95::reset(uint8_t pin)
 {  // function to send the RFM95 a hardware reset.
   // p 109 of datasheet
@@ -255,8 +251,9 @@ uint8_t plainRFM95::readRxLength()
   return readRegister(RFM95_LORA_FIFO_RX_BYTES);
 }
 
-bool plainRFM95::begin()
+bool plainRFM95::begin(uint8_t cs_pin)
 {
+  cs_pin_ = cs_pin;
   bool success = true;
 
   // Switch to LORA

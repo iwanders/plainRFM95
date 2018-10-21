@@ -173,10 +173,6 @@ protected:
   void clearIRQ();
 
 public:
-  /**
-   * @param cs_pin The chip select pin to use.
-   */
-  plainRFM95(uint8_t cs_pin);
 
   /**
    * @brief Performs a hardware reset by pulling the reset pin low.
@@ -186,9 +182,10 @@ public:
 
   /**
    * @brief Switch to LORA mode and confirm spi connections.
+   * @param cs_pin The chip select pin to use.
    * @return True if registers could be set correctly, confirming the SPI connection false otherwise.
    */
-  bool begin();
+  bool begin(uint8_t cs_pin);
 
   /**
    * @brief If the module resets for any reason, the LORA bit in the opmode gets flipped to false after the reset.

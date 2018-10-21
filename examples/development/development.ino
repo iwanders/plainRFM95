@@ -35,7 +35,7 @@ void hexprint(const uint8_t* data, uint8_t length)
 }
 
 // Instantiate the class.
-plainRFM95 rfm = plainRFM95(RFM95_CS_PIN);
+plainRFM95 rfm;
 
 void setup()
 {
@@ -83,7 +83,7 @@ void setup()
 void setupRadio()
 {
   plainRFM95::reset(RFM95_RST_PIN);  // sent the RFM95 a hard-reset.
-  if (rfm.begin())
+  if (rfm.begin(RFM95_CS_PIN))
   {
     Serial.println("Setup correct");
   }
