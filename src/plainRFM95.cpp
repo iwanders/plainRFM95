@@ -482,12 +482,12 @@ void plainRFM95::setPower(uint8_t Pout)
   // Enable boost:
   writeRegister(RFM95_MODE_RX_CAD, RFM95_PA_DAC_BOOST);
   const uint8_t Pmax = 20;
-  uint8_t bounded = max(Pmax - (15 - 0), min(Pout, Pmax));
+  uint8_t boundedPout = max(Pmax - (15 - 0), min(Pout, Pmax));
   // Pout = Pmax - (15 - OutputPower)
   // Pout = Pmax - 15 + OutputPower
   // Pout - Pmax + 15 = OutputPower
   // Not sure if RFM95_PA_CONFIG_MAX_POWER has influence without RFO? Best set it to max.
-  writeRegister(RFM95_PA_CONFIG, RFM95_PA_CONFIG_PA_SELECT | RFM95_PA_CONFIG_MAX_POWER | (Pout - Pmax + 15));
+  writeRegister(RFM95_PA_CONFIG, RFM95_PA_CONFIG_PA_SELECT | RFM95_PA_CONFIG_MAX_POWER | (boundedPout - Pmax + 15));
 }
 
 plainRFM95::Activity plainRFM95::getActivity()
