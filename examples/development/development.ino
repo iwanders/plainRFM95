@@ -89,7 +89,7 @@ void setupRadio()
   }
   //  rfm.setPreamble(160);
 
-  rfm.setModemConfigRobust();
+  //  rfm.setModemConfigRobust();
 
 }
 

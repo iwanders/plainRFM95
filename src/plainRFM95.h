@@ -348,6 +348,7 @@ public:
    * Receive:
    *   RX_DONE_INVALID_PACKET
    *   RX_DONE_VALID_PACKET
+   *   TIMEOUT
    *   NONE
    * Transmit:
    *   TX_DONE

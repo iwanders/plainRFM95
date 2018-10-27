@@ -493,6 +493,10 @@ plainRFM95::IRQState plainRFM95::poll()
     {
       return RX_DONE_INVALID_PACKET;
     }
+    else if (irqs & RFM95_LORA_IRQ_RX_TIMEOUT)
+    {
+      return TIMEOUT;
+    }
     else
     {
       return RX_DONE_VALID_PACKET;
