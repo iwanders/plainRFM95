@@ -338,6 +338,11 @@ public:
   void sleep();
 
   /**
+   * @brief Perform a CAD measurement.
+   */
+  void cad();
+
+  /**
    * @brief Polls the status register and returns enum based on the state.
    * @return The possible states depend on the previously set mode:
    * Receive:
@@ -379,6 +384,19 @@ public:
    * @return IDLE, RX, TX or CAD
    */
   Activity getActivity();
+
+  /**
+   * @brief Get the raw operation mode.
+   * @return See RFM95_MODE.
+   */
+  uint8_t getMode();
+
+  bool inSleep();
+  bool inReceive();
+  bool inTransmit();
+  bool inStandby();
+  bool inCAD();
+
 };
 
 // PLAIN_RFM95_H

@@ -45,9 +45,9 @@ void setup()
   // Block on serial port for testing.
   pinMode(LED_BUILTIN, OUTPUT);
   //  digitalWrite(LED_BUILTIN, HIGH);
-  //  while (!Serial)
-  //  {
-  //  }
+  while (!Serial)
+  {
+  }
   //  digitalWrite(LED_BUILTIN, LOW);
 
   delay(1000);
@@ -245,11 +245,43 @@ void receiver()
   }
 }
 
+void channelDetecter()
+{
+  Serial.println("channelDetecter");
+  while (1)
+  {
+    if (rfm.notInLORA())
+    {
+      Serial.println("Not in lora, calling setupRadio to fix this.");
+      setupRadio();
+    }
+
+    // Wait on message
+    elapsedMicros cad_detect = 0;
+    rfm.cad();
+    switch (rfm.block(10000))  // wait for 10 seconds, then check if we dropped out of lora.
+    {
+      case plainRFM95::CAD_DONE_NO_SIGNAL:
+        Serial.print("No cad in: "); Serial.println(cad_detect);
+        break;
+      case plainRFM95::CAD_DONE_SIGNAL:
+        Serial.print("CAD detected in: "); Serial.println(cad_detect);
+        break;
+      case plainRFM95::TIMEOUT:
+        break;
+      default:
+        Serial.println("Got unexpected return code from blocking.");
+    }
+    delay(100);
+  }
+}
+
 void loop()
 {
   // Go receiver or sender based on the unique ID in the chip.
   if (SIM_UIDL == 0x45164E45)
   {
+    channelDetecter();
     receiver();
   }
   else

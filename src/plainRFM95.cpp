@@ -415,6 +415,45 @@ void plainRFM95::sleep()
   setMode(RFM95_MODE_SLEEP);
 }
 
+void plainRFM95::cad()
+{
+  standby();
+  activity_ = CAD;
+  setMode(RFM95_MODE_RX_CAD);
+}
+
+uint8_t plainRFM95::getMode()
+{
+  return readRegister(RFM95_OPMODE) & 0b111;
+}
+
+bool plainRFM95::inSleep()
+{
+  return getMode() == RFM95_MODE_SLEEP;
+}
+
+bool plainRFM95::inReceive()
+{
+  const uint8_t mode = getMode();
+  return (mode == RFM95_MODE_FS_RX) || (mode == RFM95_MODE_RX_CONTINUOUS) || (mode == RFM95_MODE_RX_SINGLE);
+}
+
+bool plainRFM95::inTransmit()
+{
+  const uint8_t mode = getMode();
+  return (mode == RFM95_MODE_FS_TX) || (mode == RFM95_MODE_TX);
+}
+
+bool plainRFM95::inStandby()
+{
+  return getMode() == RFM95_MODE_STANDBY;
+}
+
+bool plainRFM95::inCAD()
+{
+  return getMode() == RFM95_MODE_RX_CAD;
+}
+
 void plainRFM95::clearIRQ()
 {
   writeRegister(RFM95_LORA_IRQ_FLAGS, 0xFF);
