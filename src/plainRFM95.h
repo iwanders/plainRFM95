@@ -34,7 +34,7 @@
 #define debug_rfmln(a)
 #endif
 
-#define RFM95_SPI_SETTING SPISettings(80000000, MSBFIRST, SPI_MODE0)
+#define RFM95_SPI_SETTING SPISettings(8000000, MSBFIRST, SPI_MODE0)
 
 /*
 Symbol rate, p28 S1276

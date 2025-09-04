@@ -523,7 +523,7 @@ void plainRFM95::setPower(uint8_t Pout)
   // Pout = Pmax - (15 - OutputPower);
   // Pmax is 20 with PA_boosts
   // Enable boost:
-  writeRegister(RFM95_MODE_RX_CAD, RFM95_PA_DAC_BOOST);
+  writeRegister(RFM95_PA_DAC, RFM95_PA_DAC_BOOST);
   const uint8_t Pmax = 20;
   uint8_t boundedPout = max(Pmax - (15 - 0), min(Pout, Pmax));
   // Pout = Pmax - (15 - OutputPower)
